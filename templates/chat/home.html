@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Chat - TLE AI{% endblock %}
+
+{% block sidebar_nav %}
+<div id="sidebar-content">
+    {% include "chat/partials/sidebar.html" %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-center h-screen">
+    <div class="text-center max-w-md">
+        <h2 class="text-2xl font-semibold text-gray-800 mb-3">Welcome to TLE AI</h2>
+        <p class="text-gray-500 mb-6">Your Texas Legal Expert. Ask questions about Texas law and get answers grounded in verified legal documents.</p>
+        <a href="{% url 'chat:new' %}" class="btn-primary inline-block px-6 py-2.5 rounded-lg font-medium">
+            Start a New Conversation
+        </a>
+        <div class="mt-8 text-left text-sm text-gray-400 space-y-2">
+            <p>Try asking about:</p>
+            <ul class="list-disc list-inside space-y-1">
+                <li>Texas Family Code - conservatorship</li>
+                <li>Texas Penal Code - theft offenses</li>
+                <li>Texas Rules of Civil Procedure</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

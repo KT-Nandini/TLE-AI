@@ -1,0 +1,15 @@
+{% extends "adminpanel/base_admin.html" %}
+{% block title %}Masquerade - Admin - TLE AI{% endblock %}
+
+{% block admin_content %}
+<div class="max-w-lg mx-auto mt-10 card p-6 text-center">
+    <h1 class="text-xl font-bold text-gray-800 mb-3">Start Masquerade</h1>
+    <p class="text-gray-500 mb-4">You will view the site as <strong>{{ target_user.email }}</strong>.</p>
+    <p class="text-sm text-yellow-600 mb-6">This session will be logged for audit purposes.</p>
+    <form method="POST" class="flex gap-3 justify-center">
+        {% csrf_token %}
+        <button type="submit" class="btn-primary px-5 py-2 rounded-lg">Start Masquerade</button>
+        <a href="{% url 'adminpanel:users' %}" class="btn-secondary px-5 py-2 rounded-lg">Cancel</a>
+    </form>
+</div>
+{% endblock %}

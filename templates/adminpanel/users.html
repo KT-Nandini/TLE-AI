@@ -1,0 +1,37 @@
+{% extends "adminpanel/base_admin.html" %}
+{% block title %}Users - Admin - TLE AI{% endblock %}
+
+{% block admin_content %}
+<h1 class="text-2xl font-bold text-gray-800 mb-6">Users</h1>
+<div class="card overflow-hidden">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Email</th>
+                <th>Name</th>
+                <th>Staff</th>
+                <th>Joined</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in users %}
+            <tr>
+                <td class="text-gray-700">{{ u.email }}</td>
+                <td class="text-gray-600">{{ u.first_name }} {{ u.last_name }}</td>
+                <td>{% if u.is_staff %}<span class="text-primary">Staff</span>{% else %}<span class="text-gray-400">User</span>{% endif %}</td>
+                <td class="text-gray-500">{{ u.date_joined|date:"M j, Y" }}</td>
+                <td>
+                    {% if not u.is_staff %}
+                    <form method="POST" action="{% url 'adminpanel:masquerade_start' user_id=u.pk %}" class="inline">
+                        {% csrf_token %}
+                        <button type="submit" class="link-primary text-xs">Masquerade</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

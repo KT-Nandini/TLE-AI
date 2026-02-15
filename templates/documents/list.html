@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Documents - TLE AI{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto p-6">
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">Document Library</h1>
+        <a href="{% url 'documents:upload' %}" class="btn-primary px-4 py-2 rounded-lg text-sm">Upload Document</a>
+    </div>
+    <div class="card overflow-hidden">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Authority</th>
+                    <th>Domain</th>
+                    <th>Status</th>
+                    <th>Uploaded</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for doc in documents %}
+                <tr>
+                    <td><a href="{% url 'documents:detail' pk=doc.pk %}" class="link-primary">{{ doc.title }}</a></td>
+                    <td class="text-gray-600">{{ doc.get_authority_level_display }}</td>
+                    <td class="text-gray-600">{{ doc.get_domain_display }}</td>
+                    <td>
+                        <span class="text-xs px-2 py-1 rounded-full
+                            {% if doc.status == 'completed' %}badge-status-success
+                            {% elif doc.status == 'processing' %}badge-status-warning
+                            {% elif doc.status == 'failed' %}badge-status-danger
+                            {% else %}badge-status-default{% endif %}">
+                            {{ doc.get_status_display }}
+                        </span>
+                    </td>
+                    <td class="text-gray-500">{{ doc.created_at|date:"M j, Y" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">No documents uploaded yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "adminpanel/base_admin.html" %}
+{% block title %}Conversations - Admin - TLE AI{% endblock %}
+
+{% block admin_content %}
+<h1 class="text-2xl font-bold text-gray-800 mb-6">All Conversations</h1>
+<div class="card overflow-hidden">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>User</th>
+                <th>Archived</th>
+                <th>Created</th>
+                <th>Last Activity</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for conv in conversations %}
+            <tr>
+                <td><a href="{% url 'adminpanel:conversation_detail' pk=conv.pk %}" class="link-primary">{{ conv.title }}</a></td>
+                <td class="text-gray-600">{{ conv.user.email }}</td>
+                <td>{% if conv.is_archived %}<span class="text-gray-400">Yes</span>{% else %}<span class="text-green-600">Active</span>{% endif %}</td>
+                <td class="text-gray-500">{{ conv.created_at|date:"M j, Y H:i" }}</td>
+                <td class="text-gray-500">{{ conv.updated_at|timesince }} ago</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">No conversations yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

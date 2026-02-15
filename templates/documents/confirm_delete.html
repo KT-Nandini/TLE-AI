@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Delete {{ document.title }} - TLE AI{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto p-6 mt-10">
+    <div class="card p-6 text-center">
+        <h1 class="text-xl font-bold text-gray-800 mb-3">Delete Document</h1>
+        <p class="text-gray-500 mb-2">Are you sure you want to delete:</p>
+        <p class="font-medium text-gray-800 mb-4">{{ document.title }}</p>
+        <p class="text-sm text-red-500 mb-6">This will also remove the file from the Vector Store. This cannot be undone.</p>
+        <form method="POST" class="flex gap-3 justify-center">
+            {% csrf_token %}
+            <button type="submit" class="btn-danger px-5 py-2 rounded-lg">Delete</button>
+            <a href="{% url 'documents:detail' pk=document.pk %}" class="btn-secondary px-5 py-2 rounded-lg">Cancel</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

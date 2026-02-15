@@ -1,0 +1,137 @@
+{% extends "adminpanel/base_admin.html" %}
+{% block title %}Drive Sync - Admin - TLE AI{% endblock %}
+
+{% block admin_content %}
+<div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">Google Drive Sync</h1>
+    <form method="post" action="{% url 'adminpanel:drive_sync' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn-primary px-4 py-2 rounded-lg text-sm {% if not folder_id %}opacity-50 cursor-not-allowed{% endif %}" {% if not folder_id %}disabled{% endif %}>
+            Sync Now
+        </button>
+    </form>
+</div>
+
+{% if messages %}
+<div class="mb-4">
+    {% for message in messages %}
+    <div class="px-4 py-3 rounded-lg text-sm mb-2
+        {% if message.tags == 'success' %}bg-green-50 text-green-800 border border-green-200
+        {% elif message.tags == 'error' %}bg-red-50 text-red-800 border border-red-200
+        {% else %}bg-blue-50 text-blue-800 border border-blue-200{% endif %}">
+        {{ message }}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="grid grid-cols-3 gap-4 mb-8">
+    <div class="card p-4 text-center">
+        <p class="text-3xl font-bold text-gray-800">{{ total_synced }}</p>
+        <p class="text-sm text-gray-500">Synced Files</p>
+    </div>
+    <div class="card p-4 text-center">
+        <p class="text-sm font-semibold text-gray-800">
+            {% if service_account_configured %}
+                <span class="text-green-600">Configured</span>
+            {% else %}
+                <span class="text-red-600">Not Found</span>
+            {% endif %}
+        </p>
+        <p class="text-sm text-gray-500">Service Account</p>
+    </div>
+    <div class="card p-4 text-center">
+        <p class="text-sm font-semibold text-gray-800">
+            {% if last_sync_time %}
+                {{ last_sync_time|timesince }} ago
+            {% else %}
+                Never
+            {% endif %}
+        </p>
+        <p class="text-sm text-gray-500">Last Sync</p>
+    </div>
+</div>
+
+<div class="grid grid-cols-2 gap-6 mb-8">
+    <div>
+        <h2 class="text-lg font-semibold text-gray-800 mb-3">Configuration</h2>
+        <div class="card p-5">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Drive Folder ID</label>
+                    <div class="flex items-center gap-2">
+                        <code class="flex-1 block px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 truncate">{{ folder_id|default:"Not configured" }}</code>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Sync Interval</label>
+                    <code class="block px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700">Every {{ sync_interval }} minutes</code>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Service Account File</label>
+                    <code class="block px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 truncate">{{ service_account_file|default:"Not configured" }}</code>
+                </div>
+            </div>
+            <p class="mt-4 text-xs text-gray-400">Settings are managed via environment variables. Update <code>.env</code> and restart services to change.</p>
+        </div>
+    </div>
+    <div>
+        <h2 class="text-lg font-semibold text-gray-800 mb-3">Setup Guide</h2>
+        <div class="card p-5">
+            <ol class="list-decimal list-inside space-y-2 text-sm text-gray-600">
+                <li>Create a Google Cloud project and enable the Drive API</li>
+                <li>Create a Service Account and download the JSON key file</li>
+                <li>Place the key file on the server</li>
+                <li>Share the target Drive folder with the service account email</li>
+                <li>Set <code class="bg-gray-100 px-1 rounded">GOOGLE_SERVICE_ACCOUNT_FILE</code> in <code>.env</code></li>
+                <li>Set <code class="bg-gray-100 px-1 rounded">GOOGLE_DRIVE_FOLDER_ID</code> in <code>.env</code></li>
+                <li>Restart Celery worker + beat</li>
+            </ol>
+        </div>
+    </div>
+</div>
+
+<h2 class="text-lg font-semibold text-gray-800 mb-3">Synced Files</h2>
+<div class="card overflow-hidden">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>File Name</th>
+                <th>MIME Type</th>
+                <th>Document</th>
+                <th>Status</th>
+                <th>Last Synced</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for df in drive_files %}
+            <tr>
+                <td class="text-gray-700">{{ df.name }}</td>
+                <td class="text-gray-500 text-xs">{{ df.mime_type }}</td>
+                <td>
+                    {% if df.document %}
+                        <a href="{% url 'adminpanel:document_detail' pk=df.document.pk %}" class="link-primary">{{ df.document.title|truncatechars:40 }}</a>
+                    {% else %}
+                        <span class="text-gray-400">-</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if df.document %}
+                        <span class="text-xs px-2 py-1 rounded-full
+                            {% if df.document.status == 'completed' %}badge-status-success
+                            {% elif df.document.status == 'processing' %}badge-status-warning
+                            {% elif df.document.status == 'failed' %}badge-status-danger
+                            {% else %}badge-status-default{% endif %}">{{ df.document.get_status_display }}</span>
+                    {% else %}
+                        <span class="text-xs text-gray-400">-</span>
+                    {% endif %}
+                </td>
+                <td class="text-gray-500 text-xs">{{ df.last_synced|timesince }} ago</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">No files synced yet. Click "Sync Now" to start.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

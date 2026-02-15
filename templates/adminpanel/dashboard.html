@@ -1,0 +1,54 @@
+{% extends "adminpanel/base_admin.html" %}
+{% block title %}Admin Dashboard - TLE AI{% endblock %}
+
+{% block admin_content %}
+<h1 class="text-2xl font-bold text-gray-800 mb-6">Dashboard</h1>
+
+<div class="grid grid-cols-4 gap-4 mb-8">
+    <div class="card p-4 text-center">
+        <p class="text-3xl font-bold text-gray-800">{{ total_documents }}</p>
+        <p class="text-sm text-gray-500">Documents</p>
+    </div>
+    <div class="card p-4 text-center">
+        <p class="text-3xl font-bold text-gray-800">{{ total_users }}</p>
+        <p class="text-sm text-gray-500">Users</p>
+    </div>
+    <div class="card p-4 text-center">
+        <p class="text-3xl font-bold text-gray-800">{{ total_conversations }}</p>
+        <p class="text-sm text-gray-500">Conversations</p>
+    </div>
+    <div class="card p-4 text-center">
+        <p class="text-3xl font-bold text-gray-800">{{ total_queries }}</p>
+        <p class="text-sm text-gray-500">Total Queries</p>
+    </div>
+</div>
+
+<div class="grid grid-cols-2 gap-6">
+    <div>
+        <h2 class="text-lg font-semibold text-gray-800 mb-3">Recent Documents</h2>
+        <div class="card divide-y">
+            {% for doc in recent_documents %}
+            <div class="px-4 py-3 flex items-center justify-between">
+                <span class="text-sm text-gray-700">{{ doc.title }}</span>
+                <span class="text-xs text-gray-400">{{ doc.created_at|timesince }} ago</span>
+            </div>
+            {% empty %}
+            <p class="px-4 py-6 text-gray-400 text-center text-sm">No documents yet</p>
+            {% endfor %}
+        </div>
+    </div>
+    <div>
+        <h2 class="text-lg font-semibold text-gray-800 mb-3">Recent Queries</h2>
+        <div class="card divide-y">
+            {% for log in recent_usage %}
+            <div class="px-4 py-3">
+                <p class="text-sm text-gray-700 truncate">{{ log.query_text }}</p>
+                <p class="text-xs text-gray-400">{{ log.user.email }} &middot; {{ log.created_at|timesince }} ago</p>
+            </div>
+            {% empty %}
+            <p class="px-4 py-6 text-gray-400 text-center text-sm">No queries yet</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

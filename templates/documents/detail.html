@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ document.title }} - TLE AI{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto p-6">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <a href="{% url 'documents:list' %}" class="text-sm text-gray-500 hover:text-gray-700">&larr; Back to documents</a>
+            <h1 class="text-2xl font-bold text-gray-800 mt-1">{{ document.title }}</h1>
+        </div>
+        <div class="flex gap-2">
+            <form method="POST" action="{% url 'documents:reupload' pk=document.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn-secondary text-sm rounded px-3 py-1.5">Re-upload</button>
+            </form>
+            <a href="{% url 'documents:delete' pk=document.pk %}" class="text-sm border border-red-200 text-red-600 rounded px-3 py-1.5 hover:bg-red-50">Delete</a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-4 gap-4 mb-6">
+        <div class="card p-4">
+            <p class="text-xs text-gray-500">Authority</p>
+            <p class="font-medium">{{ document.get_authority_level_display }}</p>
+        </div>
+        <div class="card p-4">
+            <p class="text-xs text-gray-500">Domain</p>
+            <p class="font-medium">{{ document.get_domain_display }}</p>
+        </div>
+        <div class="card p-4">
+            <p class="text-xs text-gray-500">Status</p>
+            <p class="font-medium">{{ document.get_status_display }}</p>
+        </div>
+        <div class="card p-4">
+            <p class="text-xs text-gray-500">OpenAI File ID</p>
+            <p class="font-medium text-xs break-all">{{ document.openai_file_id|default:"Not uploaded" }}</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

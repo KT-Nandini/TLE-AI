@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+{% block title %}{{ conversation.title }} - TLE AI{% endblock %}
+
+{% block sidebar_nav %}
+<div id="sidebar-content">
+    {% include "chat/partials/sidebar.html" %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="chat-layout">
+    <div class="chat-area">
+        <!-- Chat Header -->
+        <div class="chat-header">
+            <button class="mobile-menu-btn" id="mobile-menu-btn" title="Open menu">
+                <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+            <h2 class="font-medium text-gray-800 truncate" id="conv-title">{{ conversation.title }}</h2>
+            <form method="POST" action="{% url 'chat:archive' pk=conversation.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="text-gray-400 hover:text-red-500" title="Archive conversation">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                </button>
+            </form>
+        </div>
+
+        <!-- Messages -->
+        <div class="chat-messages space-y-6" id="messages-container">
+            {% for msg in chat_messages %}
+                {% if msg.role == "user" %}
+                <div class="flex justify-end">
+                    <div class="chat-bubble-user max-w-2xl">
+                        <p class="text-gray-800 whitespace-pre-wrap">{{ msg.content }}</p>
+                    </div>
+                </div>
+                {% elif msg.role == "assistant" %}
+                <div class="flex justify-start">
+                    <div class="chat-bubble-assistant max-w-2xl">
+                        <div class="prose prose-sm text-gray-800 assistant-markdown">{{ msg.content }}</div>
+                        <!-- citations hidden for now -->
+                    </div>
+                </div>
+                {% endif %}
+            {% empty %}
+            <div class="flex items-center justify-center h-full text-gray-400">
+                <p>Ask a question about Texas law to get started.</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Typing indicator (three dots) -->
+        <div id="typing-indicator" class="px-6 hidden">
+            <div class="flex justify-start mb-4">
+                <div class="chat-bubble-assistant">
+                    <div class="typing-indicator">
+                        <span class="typing-dot"></span>
+                        <span class="typing-dot"></span>
+                        <span class="typing-dot"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Streaming response area -->
+        <div id="streaming-response" class="px-6 hidden">
+            <div class="flex justify-start mb-4">
+                <div class="chat-bubble-assistant max-w-2xl">
+                    <div class="prose prose-sm text-gray-800" id="stream-content"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="chat-input-area">
+            <form id="chat-form" class="flex gap-3" hx-post="{% url 'chat:send' pk=conversation.pk %}" hx-target="#messages-container" hx-swap="beforeend">
+                {% csrf_token %}
+                <input type="text" name="message" id="message-input"
+                    class="chat-input"
+                    placeholder="Ask a question about Texas law..."
+                    autocomplete="off" required>
+                <button type="submit" id="send-btn" class="chat-send-btn">
+                    Send
+                </button>
+            </form>
+            <p class="text-xs text-gray-400 mt-2 text-center">
+                TLE AI provides legal information, not legal advice. Always consult a licensed attorney.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    const form = document.getElementById('chat-form');
+    const input = document.getElementById('message-input');
+    const sendBtn = document.getElementById('send-btn');
+    const messagesContainer = document.getElementById('messages-container');
+    const typingIndicator = document.getElementById('typing-indicator');
+    const streamingResponse = document.getElementById('streaming-response');
+    const streamContent = document.getElementById('stream-content');
+    const convPk = "{{ conversation.pk }}";
+
+    function showErrorToast(msg) {
+        var toast = document.createElement('div');
+        toast.className = 'chat-error-toast';
+        toast.textContent = msg;
+        document.body.appendChild(toast);
+        setTimeout(function() { toast.classList.add('show'); }, 10);
+        setTimeout(function() {
+            toast.classList.remove('show');
+            setTimeout(function() { toast.remove(); }, 300);
+        }, 4000);
+    }
+
+    // Configure marked for clean output
+    marked.setOptions({
+        breaks: true,
+        gfm: true,
+    });
+
+    // Render all saved assistant messages as markdown on page load
+    document.querySelectorAll('.assistant-markdown').forEach(function(el) {
+        var raw = el.textContent;
+        el.innerHTML = marked.parse(raw);
+    });
+
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+    form.addEventListener('htmx:afterRequest', function(e) {
+        if (e.detail.successful) {
+            input.value = '';
+            sendBtn.disabled = true;
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+            // Show typing indicator (three dots)
+            typingIndicator.classList.remove('hidden');
+            streamingResponse.classList.add('hidden');
+            streamContent.innerHTML = '';
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+            let firstToken = true;
+            let rawText = '';
+            let renderTimer = null;
+            let streamCitations = [];
+
+            function renderMarkdown() {
+                streamContent.innerHTML = marked.parse(rawText);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+
+            const evtSource = new EventSource(`/chat/${convPk}/stream/`);
+            evtSource.onmessage = function(event) {
+                if (event.data === '[DONE]') {
+                    evtSource.close();
+                    sendBtn.disabled = false;
+                    typingIndicator.classList.add('hidden');
+                    if (renderTimer) clearTimeout(renderTimer);
+
+                    if (rawText.trim()) {
+                        // Final render of the complete response
+                        var rendered = marked.parse(rawText);
+                        // citations hidden for now
+                        var citationsHtml = '';
+                        const msgDiv = document.createElement('div');
+                        msgDiv.className = 'flex justify-start';
+                        msgDiv.innerHTML =
+                            '<div class="chat-bubble-assistant max-w-2xl">' +
+                                '<div class="prose prose-sm text-gray-800">' + rendered + '</div>' +
+                                citationsHtml +
+                            '</div>';
+                        messagesContainer.appendChild(msgDiv);
+                    }
+                    streamingResponse.classList.add('hidden');
+                    streamContent.innerHTML = '';
+                    rawText = '';
+                    streamCitations = [];
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    htmx.ajax('GET', '/chat/sidebar/', {target: '#sidebar-content', swap: 'innerHTML'});
+                    setTimeout(function() {
+                        htmx.ajax('GET', '/chat/sidebar/', {target: '#sidebar-content', swap: 'innerHTML'});
+                        fetch(`/chat/${convPk}/title/`).then(r => r.json()).then(d => {
+                            if (d.title) document.getElementById('conv-title').textContent = d.title;
+                        }).catch(() => {});
+                    }, 3000);
+                    return;
+                }
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.token) {
+                        if (firstToken) {
+                            firstToken = false;
+                            typingIndicator.classList.add('hidden');
+                            streamingResponse.classList.remove('hidden');
+                        }
+                        rawText += data.token;
+                        // Debounced render: update markdown every 80ms for smooth streaming
+                        if (!renderTimer) {
+                            renderTimer = setTimeout(function() {
+                                renderTimer = null;
+                                renderMarkdown();
+                            }, 80);
+                        }
+                    } else if (data.citations) {
+                        streamCitations = data.citations;
+                    } else if (data.error) {
+                        typingIndicator.classList.add('hidden');
+                        streamingResponse.classList.add('hidden');
+                        showErrorToast('Something went wrong. Please try again.');
+                    }
+                } catch (err) {}
+            };
+            evtSource.onerror = function() {
+                evtSource.close();
+                sendBtn.disabled = false;
+                typingIndicator.classList.add('hidden');
+                streamingResponse.classList.add('hidden');
+                if (renderTimer) clearTimeout(renderTimer);
+                if (!rawText.trim()) {
+                    showErrorToast('Connection lost. Please try again.');
+                }
+            };
+        }
+    });
+})();
+</script>
+{% endblock %}

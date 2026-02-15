@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Sign Out - TLE AI{% endblock %}
+
+{% block extra_js %}
+<script>
+// If someone lands on the logout page directly, show the modal automatically
+document.addEventListener('DOMContentLoaded', function() {
+    var modal = document.getElementById('signout-modal');
+    if (modal) modal.style.display = 'block';
+});
+</script>
+{% endblock %}

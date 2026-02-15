@@ -1,0 +1,210 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}TLE AI - Texas Legal Expert{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=15">
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script src="https://unpkg.com/htmx-ext-sse@2.2.2/sse.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="h-full">
+    {% block page_body %}
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <!-- Top: Logo + Toggle -->
+        <div class="sidebar-header">
+            <a href="{% url 'chat:home' %}" class="sidebar-logo">
+                <svg class="sidebar-logo-icon" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M16 4L16 8M16 8L6 14V24L16 28L26 24V14L16 8Z"/>
+                    <path d="M10 17L14 21L22 13"/>
+                </svg>
+                <div>
+                    <div class="sidebar-logo-text">TLE AI</div>
+                    <div class="sidebar-logo-subtitle">Texas Legal Expert</div>
+                </div>
+            </a>
+            <button class="sidebar-toggle" id="sidebar-toggle" title="Toggle sidebar">
+                <svg class="toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+        </div>
+
+        <!-- Masquerade banner -->
+        {% if request.is_masquerading %}
+        <div class="sidebar-masquerade">
+            <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            <span class="sidebar-label">
+                {{ request.user.email }}
+                <a href="{% url 'adminpanel:masquerade_stop' %}">Stop</a>
+            </span>
+        </div>
+        {% endif %}
+
+        <!-- Middle: Navigation -->
+        <nav class="sidebar-nav">
+            {% block sidebar_nav %}
+            <!-- Default nav links -->
+            <a href="{% url 'chat:home' %}" class="sidebar-nav-item">
+                <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                <span class="sidebar-label">Chat</span>
+            </a>
+            <a href="{% url 'documents:list' %}" class="sidebar-nav-item">
+                <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <span class="sidebar-label">Documents</span>
+            </a>
+            {% endblock %}
+        </nav>
+
+        <!-- Bottom: User info + actions -->
+        <div class="sidebar-footer">
+            {% if user.is_staff %}
+            <a href="{% url 'adminpanel:dashboard' %}" class="sidebar-nav-item">
+                <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                <span class="sidebar-label">Admin</span>
+            </a>
+            {% endif %}
+            <div class="sidebar-user-row">
+                <div class="sidebar-avatar">{{ user.email.0|upper }}</div>
+                <span class="sidebar-user-email sidebar-label">{{ user.email }}</span>
+                <div class="sidebar-user-menu" id="user-menu">
+                    <button class="sidebar-menu-btn" id="user-menu-btn" type="button" title="Account menu">
+                        <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </aside>
+
+    <!-- User dropdown (outside sidebar to avoid overflow clipping) -->
+    <div class="sidebar-dropdown" id="user-dropdown">
+        <button type="button" class="sidebar-dropdown-item" id="signout-trigger" style="width:100%;border:none;background:none;cursor:pointer;font:inherit;">
+            <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+            Sign Out
+        </button>
+    </div>
+
+    <!-- Sign Out Modal -->
+    <div id="signout-modal" style="display:none;position:fixed;inset:0;z-index:999;display:none;">
+        <div style="position:absolute;inset:0;background:rgba(0,0,0,0.4);" id="signout-backdrop"></div>
+        <div style="position:relative;display:flex;align-items:center;justify-content:center;height:100%;">
+            <div style="background:#fff;border-radius:0.75rem;padding:2rem;max-width:360px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.15);text-align:center;position:relative;z-index:1;">
+                <svg style="margin:0 auto 1rem;color:#ef4444;" width="40" height="40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                <h3 style="font-size:1.125rem;font-weight:600;color:#1f2937;margin-bottom:0.5rem;">Sign Out</h3>
+                <p style="color:#6b7280;font-size:0.875rem;margin-bottom:1.5rem;">Are you sure you want to sign out?</p>
+                <div style="display:flex;gap:0.75rem;justify-content:center;">
+                    <button type="button" id="signout-cancel" style="padding:0.5rem 1.25rem;border-radius:0.5rem;border:1px solid #d1d5db;background:#fff;color:#374151;font-size:0.875rem;cursor:pointer;">Cancel</button>
+                    <form method="POST" action="{% url 'account_logout' %}" style="margin:0;">
+                        {% csrf_token %}
+                        <button type="submit" style="padding:0.5rem 1.25rem;border-radius:0.5rem;border:none;background:#ef4444;color:#fff;font-size:0.875rem;font-weight:500;cursor:pointer;">Sign Out</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile overlay -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        {% if messages %}
+        <div class="toast-container" x-data>
+            {% for message in messages %}
+            <div class="toast toast-{% if message.tags == 'success' %}success{% elif message.tags == 'error' %}error{% elif message.tags == 'warning' %}warning{% else %}info{% endif %}"
+                x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Sidebar scripts -->
+    <script>
+    (function() {
+        var body = document.body;
+        if (localStorage.getItem('sidebar-collapsed') === 'true') {
+            body.classList.add('sidebar-collapsed');
+        }
+        document.getElementById('sidebar-toggle').addEventListener('click', function() {
+            body.classList.toggle('sidebar-collapsed');
+            localStorage.setItem('sidebar-collapsed', body.classList.contains('sidebar-collapsed'));
+        });
+
+        // User dropdown menu
+        var menuBtn = document.getElementById('user-menu-btn');
+        var dropdown = document.getElementById('user-dropdown');
+        if (menuBtn && dropdown) {
+            menuBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var isOpen = dropdown.classList.toggle('open');
+                if (isOpen) {
+                    var rect = menuBtn.getBoundingClientRect();
+                    dropdown.style.left = rect.left + 'px';
+                    dropdown.style.bottom = (window.innerHeight - rect.top + 4) + 'px';
+                }
+            });
+            document.addEventListener('click', function() {
+                dropdown.classList.remove('open');
+            });
+        }
+
+        // Mobile sidebar
+        var overlay = document.getElementById('sidebar-overlay');
+        var mobileBtn = document.getElementById('mobile-menu-btn');
+        function closeMobileSidebar() {
+            body.classList.remove('sidebar-mobile-open');
+            if (overlay) overlay.classList.remove('open');
+        }
+        if (mobileBtn) {
+            mobileBtn.addEventListener('click', function() {
+                body.classList.toggle('sidebar-mobile-open');
+                if (overlay) overlay.classList.toggle('open');
+            });
+        }
+        if (overlay) {
+            overlay.addEventListener('click', closeMobileSidebar);
+        }
+        // Close mobile sidebar when a nav link is clicked
+        document.querySelectorAll('.sidebar-nav-item').forEach(function(link) {
+            link.addEventListener('click', function() {
+                if (window.innerWidth <= 768) closeMobileSidebar();
+            });
+        });
+        // Close mobile sidebar when toggle is clicked on mobile
+        document.getElementById('sidebar-toggle').addEventListener('click', function() {
+            if (window.innerWidth <= 768) closeMobileSidebar();
+        });
+
+        // Sign out modal
+        var signoutModal = document.getElementById('signout-modal');
+        var signoutTrigger = document.getElementById('signout-trigger');
+        var signoutCancel = document.getElementById('signout-cancel');
+        var signoutBackdrop = document.getElementById('signout-backdrop');
+        if (signoutTrigger && signoutModal) {
+            signoutTrigger.addEventListener('click', function(e) {
+                e.preventDefault();
+                dropdown.classList.remove('open');
+                signoutModal.style.display = 'block';
+            });
+            signoutCancel.addEventListener('click', function() {
+                signoutModal.style.display = 'none';
+            });
+            signoutBackdrop.addEventListener('click', function() {
+                signoutModal.style.display = 'none';
+            });
+        }
+    })();
+    </script>
+    {% endblock page_body %}
+
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
