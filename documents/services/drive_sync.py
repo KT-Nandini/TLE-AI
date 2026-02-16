@@ -10,6 +10,13 @@ from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
+# Files to never sync from Drive (case-insensitive, matched against filename without extension)
+BLOCKED_FILES = {
+    "systemprompt_customgpt_full",
+    "systemprompt_customgpt_lite",
+    "queries and responses examples",
+}
+
 SUPPORTED_MIME_TYPES = {
     "application/pdf": ".pdf",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
@@ -154,6 +161,12 @@ def sync_folder():
         seen_drive_ids.add(file_id)
         name = df["name"]
         mime_type = df["mimeType"]
+
+        # Skip blocked files
+        name_without_ext = os.path.splitext(name)[0].strip().lower()
+        if name_without_ext in BLOCKED_FILES:
+            logger.info(f"Skipping blocked file: {name}")
+            continue
         md5 = df.get("md5Checksum", "")
         modified_str = df.get("modifiedTime", "")
 

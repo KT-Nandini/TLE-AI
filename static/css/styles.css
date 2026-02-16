@@ -392,6 +392,7 @@ body.sidebar-collapsed .sidebar-toggle .toggle-icon {
     min-height: 100vh;
     background-color: var(--color-bg);
     transition: margin-left var(--transition-speed) ease;
+    overflow-x: hidden;
 }
 
 body.sidebar-collapsed .main-content {
@@ -473,6 +474,51 @@ body.sidebar-collapsed .main-content {
 
 .btn-danger:hover {
     background-color: var(--color-danger-text);
+}
+
+/* Outlined small action buttons */
+.btn-outline-sm {
+    display: inline-block;
+    padding: 0.25rem 0.625rem;
+    font-size: 0.7rem;
+    font-weight: 500;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-decoration: none;
+    line-height: 1.4;
+    white-space: nowrap;
+    background: transparent;
+}
+
+.btn-outline-primary {
+    color: var(--color-primary);
+    border: 1px solid var(--color-primary);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--color-primary);
+    color: white;
+}
+
+.btn-outline-danger {
+    color: var(--color-danger);
+    border: 1px solid var(--color-danger);
+}
+
+.btn-outline-danger:hover {
+    background-color: var(--color-danger);
+    color: white;
+}
+
+.btn-outline-warning {
+    color: #d97706;
+    border: 1px solid #d97706;
+}
+
+.btn-outline-warning:hover {
+    background-color: #d97706;
+    color: white;
 }
 
 .btn-secondary {
@@ -641,6 +687,11 @@ body.sidebar-collapsed .main-content {
 }
 
 /* --- Tables --- */
+.table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
 .data-table {
     width: 100%;
 }
@@ -650,12 +701,13 @@ body.sidebar-collapsed .main-content {
 }
 
 .data-table th {
-    padding: 0.75rem 1rem;
+    padding: 0.5rem 0.625rem;
     text-align: left;
-    font-size: 0.75rem;
-    font-weight: 500;
-    text-transform: uppercase;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: none;
     color: var(--color-text-secondary);
+    white-space: nowrap;
 }
 
 .data-table tbody tr {
@@ -667,8 +719,11 @@ body.sidebar-collapsed .main-content {
 }
 
 .data-table td {
-    padding: 0.75rem 1rem;
+    padding: 0.5rem 0.625rem;
     font-size: 0.875rem;
+    max-width: 250px;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* --- Cards --- */

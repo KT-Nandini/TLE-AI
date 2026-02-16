@@ -2,42 +2,91 @@
 {% block title %}Documents - Admin - TLE AI{% endblock %}
 
 {% block admin_content %}
-<div class="flex items-center justify-between mb-6">
-    <h1 class="text-2xl font-bold text-gray-800">Documents</h1>
+<div class="flex items-center justify-between mb-4">
+    <h1 class="text-2xl font-bold text-gray-800">Documents <span class="text-sm font-normal text-gray-400">({{ total }})</span></h1>
     <a href="{% url 'adminpanel:document_upload' %}" class="btn-primary px-4 py-2 rounded-lg text-sm">Upload Document</a>
 </div>
-<div class="card overflow-hidden">
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>Title</th>
-                <th>Authority</th>
-                <th>Domain</th>
-                <th>Status</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for doc in documents %}
-            <tr>
-                <td><a href="{% url 'adminpanel:document_detail' pk=doc.pk %}" class="link-primary">{{ doc.title }}</a></td>
-                <td class="text-gray-600">{{ doc.get_authority_level_display }}</td>
-                <td class="text-gray-600">{{ doc.get_domain_display }}</td>
-                <td>
-                    <span class="text-xs px-2 py-1 rounded-full
-                        {% if doc.status == 'completed' %}badge-status-success
-                        {% elif doc.status == 'processing' %}badge-status-warning
-                        {% elif doc.status == 'failed' %}badge-status-danger
-                        {% else %}badge-status-default{% endif %}">{{ doc.get_status_display }}</span>
-                </td>
-                <td>
-                    <a href="{% url 'adminpanel:document_delete' pk=doc.pk %}" class="link-danger">Delete</a>
-                </td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">No documents yet.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
+
+<!-- Search & Filters -->
+<form method="GET" class="flex gap-3 mb-4 flex-wrap">
+    <input type="text" name="q" value="{{ search }}" placeholder="Search by title or domain..." class="form-input flex-1 min-w-[200px]">
+    <select name="status" class="form-input" style="max-width:160px;">
+        <option value="">All Status</option>
+        <option value="pending" {% if status_filter == "pending" %}selected{% endif %}>Pending</option>
+        <option value="processing" {% if status_filter == "processing" %}selected{% endif %}>Processing</option>
+        <option value="completed" {% if status_filter == "completed" %}selected{% endif %}>Completed</option>
+        <option value="failed" {% if status_filter == "failed" %}selected{% endif %}>Failed</option>
+    </select>
+    <button type="submit" class="btn-primary px-4 py-2 rounded-lg text-sm">Search</button>
+    {% if search or status_filter %}<a href="{% url 'adminpanel:documents' %}" class="px-4 py-2 text-sm text-gray-500 hover:text-gray-700">Clear</a>{% endif %}
+</form>
+
+<form method="POST" action="{% url 'adminpanel:documents_bulk_delete' %}" id="bulk-form">
+    {% csrf_token %}
+    <!-- Bulk Actions -->
+    <div class="flex items-center gap-3 mb-3">
+        <label class="text-sm text-gray-500"><input type="checkbox" id="select-all" class="mr-1"> Select All</label>
+        <button type="submit" class="text-xs px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 hidden" id="bulk-delete-btn" onclick="return confirm('Delete selected documents? This also removes them from Vector Store.')">Delete Selected</button>
+        <span class="text-xs text-gray-400 hidden" id="selected-count"></span>
+    </div>
+
+    <div class="card">
+        <div class="table-wrapper">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width:30px;"></th>
+                    <th>Title</th>
+                    <th>Status</th>
+                    <th>OpenAI File</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for doc in documents %}
+                <tr>
+                    <td><input type="checkbox" name="selected" value="{{ doc.pk }}" class="row-check"></td>
+                    <td><a href="{% url 'adminpanel:document_detail' pk=doc.pk %}" class="link-primary">{{ doc.title|truncatewords:10 }}</a></td>
+                    <td>
+                        <span class="text-xs px-2 py-1 rounded-full
+                            {% if doc.status == 'completed' %}badge-status-success
+                            {% elif doc.status == 'processing' %}badge-status-warning
+                            {% elif doc.status == 'failed' %}badge-status-danger
+                            {% else %}badge-status-default{% endif %}">{{ doc.get_status_display }}</span>
+                    </td>
+                    <td class="text-xs text-gray-400">{{ doc.openai_file_id|default:"—"|truncatechars:20 }}</td>
+                    <td>
+                        <div class="flex items-center gap-2">
+                            <a href="{% url 'adminpanel:document_detail' pk=doc.pk %}" class="btn-outline-sm btn-outline-primary">View</a>
+                            <a href="{% url 'adminpanel:document_delete' pk=doc.pk %}" class="btn-outline-sm btn-outline-danger">Delete</a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">No documents found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</form>
+
+{% include "adminpanel/partials/pagination.html" with page_obj=documents %}
+
+<script>
+(function(){
+    var selectAll = document.getElementById('select-all');
+    var checks = document.querySelectorAll('.row-check');
+    var bulkBtn = document.getElementById('bulk-delete-btn');
+    var countEl = document.getElementById('selected-count');
+    function updateBulk(){
+        var c = document.querySelectorAll('.row-check:checked').length;
+        bulkBtn.classList.toggle('hidden', c === 0);
+        countEl.classList.toggle('hidden', c === 0);
+        countEl.textContent = c + ' selected';
+    }
+    selectAll.addEventListener('change', function(){ checks.forEach(function(cb){ cb.checked = selectAll.checked; }); updateBulk(); });
+    checks.forEach(function(cb){ cb.addEventListener('change', updateBulk); });
+})();
+</script>
 {% endblock %}

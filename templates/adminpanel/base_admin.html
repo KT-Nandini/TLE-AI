@@ -30,6 +30,19 @@
     <span class="sidebar-label">Usage Logs</span>
 </a>
 <div class="sidebar-divider"></div>
+<a href="{% url 'adminpanel:vector_store' %}" class="sidebar-nav-item {% if 'vector_store' in request.resolver_match.url_name %}active{% endif %}">
+    <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
+    <span class="sidebar-label">Vector Store</span>
+</a>
+<a href="{% url 'adminpanel:settings' %}" class="sidebar-nav-item {% if 'settings' == request.resolver_match.url_name %}active{% endif %}">
+    <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+    <span class="sidebar-label">Settings</span>
+</a>
+<a href="{% url 'adminpanel:raw_log' %}" class="sidebar-nav-item {% if 'raw_log' in request.resolver_match.url_name %}active{% endif %}">
+    <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+    <span class="sidebar-label">Raw Log</span>
+</a>
+<div class="sidebar-divider"></div>
 <a href="{% url 'chat:home' %}" class="sidebar-nav-item">
     <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z"/></svg>
     <span class="sidebar-label">Back to Chat</span>

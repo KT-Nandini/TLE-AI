@@ -1,0 +1,48 @@
+{% extends "adminpanel/base_admin.html" %}
+{% block title %}Vector Store - Admin - TLE AI{% endblock %}
+
+{% block admin_content %}
+<h1 class="text-2xl font-bold text-gray-800 mb-6">OpenAI Vector Store</h1>
+
+{% if error %}
+<div class="card p-6 text-red-600">Error: {{ error }}</div>
+{% elif not vs_id %}
+<div class="card p-6 text-gray-400">No Vector Store ID configured. Set OPENAI_VECTOR_STORE_ID in .env</div>
+{% elif vs %}
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="card p-4 text-center">
+        <p class="text-3xl font-bold text-green-600">{{ vs.file_counts.completed }}</p>
+        <p class="text-sm text-gray-500">Completed</p>
+    </div>
+    <div class="card p-4 text-center">
+        <p class="text-3xl font-bold text-yellow-500">{{ vs.file_counts.in_progress }}</p>
+        <p class="text-sm text-gray-500">In Progress</p>
+    </div>
+    <div class="card p-4 text-center">
+        <p class="text-3xl font-bold text-red-500">{{ vs.file_counts.failed }}</p>
+        <p class="text-sm text-gray-500">Failed</p>
+    </div>
+    <div class="card p-4 text-center">
+        <p class="text-3xl font-bold text-gray-800">{{ vs.file_counts.total }}</p>
+        <p class="text-sm text-gray-500">Total Files</p>
+    </div>
+</div>
+
+<div class="card p-6">
+    <h2 class="text-lg font-semibold text-gray-800 mb-4">Details</h2>
+    <table class="w-full text-sm">
+        <tr class="border-b"><td class="py-2 text-gray-500 w-48">Vector Store ID</td><td class="py-2 text-gray-800 font-mono text-xs">{{ vs.id }}</td></tr>
+        <tr class="border-b"><td class="py-2 text-gray-500">Name</td><td class="py-2 text-gray-800">{{ vs.name|default:"(unnamed)" }}</td></tr>
+        <tr class="border-b"><td class="py-2 text-gray-500">Status</td><td class="py-2 text-gray-800">{{ vs.status }}</td></tr>
+        <tr class="border-b"><td class="py-2 text-gray-500">Storage</td><td class="py-2 text-gray-800">{{ vs.usage_mb }} MB ({{ vs.usage_gb }} GB)</td></tr>
+        <tr class="border-b"><td class="py-2 text-gray-500">Free Tier</td><td class="py-2 text-gray-800">1 GB free, then $0.10/GB/day</td></tr>
+        <tr><td class="py-2 text-gray-500">Est. Daily Storage Cost</td>
+            <td class="py-2 text-green-600 font-medium">
+                {% if vs.usage_gb > 1 %}${{ vs.usage_gb|add:"-1"|floatformat:4 }} /day
+                {% else %}$0.00 (within free tier){% endif %}
+            </td>
+        </tr>
+    </table>
+</div>
+{% endif %}
+{% endblock %}

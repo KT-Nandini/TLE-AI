@@ -2,16 +2,45 @@
 {% block title %}Usage Logs - Admin - TLE AI{% endblock %}
 
 {% block admin_content %}
-<h1 class="text-2xl font-bold text-gray-800 mb-6">Usage Logs</h1>
-<div class="card overflow-hidden">
+<div class="flex items-center justify-between mb-4">
+    <h1 class="text-2xl font-bold text-gray-800">Usage Logs <span class="text-sm font-normal text-gray-400">({{ total }})</span></h1>
+    <a href="{% url 'adminpanel:usage_export' %}" class="btn-primary px-4 py-2 rounded-lg text-sm">Export CSV</a>
+</div>
+
+<!-- Totals Summary -->
+<div class="grid grid-cols-3 gap-4 mb-4">
+    <div class="card p-4 text-center">
+        <div class="text-xs text-gray-500 uppercase">Total Input Tokens</div>
+        <div class="text-lg font-bold text-gray-800">{{ total_input|floatformat:0 }}</div>
+    </div>
+    <div class="card p-4 text-center">
+        <div class="text-xs text-gray-500 uppercase">Total Output Tokens</div>
+        <div class="text-lg font-bold text-gray-800">{{ total_output|floatformat:0 }}</div>
+    </div>
+    <div class="card p-4 text-center">
+        <div class="text-xs text-gray-500 uppercase">Total Cost</div>
+        <div class="text-lg font-bold text-green-600">${{ total_cost|floatformat:4 }}</div>
+    </div>
+</div>
+
+<!-- Search & Filters -->
+<form method="GET" class="flex gap-3 mb-4 flex-wrap">
+    <input type="text" name="q" value="{{ search }}" placeholder="Search by query text..." class="form-input flex-1 min-w-[200px]">
+    <input type="text" name="user" value="{{ user_filter }}" placeholder="Filter by user email..." class="form-input" style="max-width:220px;">
+    <button type="submit" class="btn-primary px-4 py-2 rounded-lg text-sm">Search</button>
+    {% if search or user_filter %}<a href="{% url 'adminpanel:usage' %}" class="px-4 py-2 text-sm text-gray-500 hover:text-gray-700">Clear</a>{% endif %}
+</form>
+
+<div class="card">
+    <div class="table-wrapper">
     <table class="data-table">
         <thead>
             <tr>
                 <th>User</th>
                 <th>Query</th>
-                <th>Input Tokens</th>
-                <th>Output Tokens</th>
-                <th>Total Tokens</th>
+                <th>Input</th>
+                <th>Output</th>
+                <th>Total</th>
                 <th>Cost</th>
                 <th>Time</th>
             </tr>
@@ -19,18 +48,21 @@
         <tbody>
             {% for log in logs %}
             <tr>
-                <td class="text-gray-600">{{ log.user.email }}</td>
-                <td class="text-gray-700 truncate max-w-xs">{{ log.query_text|truncatewords:15 }}</td>
-                <td class="text-gray-600">{{ log.input_tokens|default:"—" }}</td>
-                <td class="text-gray-600">{{ log.output_tokens|default:"—" }}</td>
-                <td class="text-gray-600 font-medium">{{ log.input_tokens|add:log.output_tokens }}</td>
-                <td class="text-green-600 font-medium">${{ log.cost|floatformat:6 }}</td>
-                <td class="text-gray-500">{{ log.created_at|timesince }} ago</td>
+                <td class="text-gray-600 text-sm">{{ log.user.email }}</td>
+                <td class="text-gray-700 text-sm" style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ log.query_text|truncatewords:12 }}</td>
+                <td class="text-gray-500 text-sm">{{ log.input_tokens|default:"--" }}</td>
+                <td class="text-gray-500 text-sm">{{ log.output_tokens|default:"--" }}</td>
+                <td class="text-gray-600 text-sm font-medium">{{ log.input_tokens|add:log.output_tokens }}</td>
+                <td class="text-green-600 text-sm font-medium">${{ log.cost|floatformat:6 }}</td>
+                <td class="text-gray-400 text-xs">{{ log.created_at|timesince }} ago</td>
             </tr>
             {% empty %}
             <tr><td colspan="7" class="px-4 py-8 text-center text-gray-400">No usage logs yet.</td></tr>
             {% endfor %}
         </tbody>
     </table>
+    </div>
 </div>
+
+{% include "adminpanel/partials/pagination.html" with page_obj=logs %}
 {% endblock %}

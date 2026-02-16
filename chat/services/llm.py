@@ -90,8 +90,9 @@ If the user challenges your answer, alleges a wrong citation/deadline, or you de
 - Stop and run a correction cycle: re-check citations, re-check deadlines if implicated, re-run IRAC, then issue a clear Correction Notice that supersedes the earlier text."""
 
 
-def generate_title(first_user_message: str, first_assistant_message: str) -> str:
-    """Generate a short conversation title from the first exchange."""
+def generate_title(first_user_message: str, first_assistant_message: str) -> dict:
+    """Generate a short conversation title from the first exchange.
+    Returns dict with 'title', 'input_tokens', 'output_tokens'."""
     client = get_openai_client()
     response = client.chat.completions.create(
         model=settings.OPENAI_CHAT_MODEL,
@@ -105,4 +106,9 @@ def generate_title(first_user_message: str, first_assistant_message: str) -> str
         max_tokens=20,
         temperature=0.3,
     )
-    return response.choices[0].message.content.strip().strip('"')
+    usage = response.usage
+    return {
+        "title": response.choices[0].message.content.strip().strip('"'),
+        "input_tokens": usage.prompt_tokens if usage else 0,
+        "output_tokens": usage.completion_tokens if usage else 0,
+    }

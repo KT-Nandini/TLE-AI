@@ -2,31 +2,82 @@
 {% block title %}Conversations - Admin - TLE AI{% endblock %}
 
 {% block admin_content %}
-<h1 class="text-2xl font-bold text-gray-800 mb-6">All Conversations</h1>
-<div class="card overflow-hidden">
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>Title</th>
-                <th>User</th>
-                <th>Archived</th>
-                <th>Created</th>
-                <th>Last Activity</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for conv in conversations %}
-            <tr>
-                <td><a href="{% url 'adminpanel:conversation_detail' pk=conv.pk %}" class="link-primary">{{ conv.title }}</a></td>
-                <td class="text-gray-600">{{ conv.user.email }}</td>
-                <td>{% if conv.is_archived %}<span class="text-gray-400">Yes</span>{% else %}<span class="text-green-600">Active</span>{% endif %}</td>
-                <td class="text-gray-500">{{ conv.created_at|date:"M j, Y H:i" }}</td>
-                <td class="text-gray-500">{{ conv.updated_at|timesince }} ago</td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">No conversations yet.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
+<h1 class="text-2xl font-bold text-gray-800 mb-4">Conversations <span class="text-sm font-normal text-gray-400">({{ total }})</span></h1>
+
+<!-- Search & Filters -->
+<form method="GET" class="flex gap-3 mb-4 flex-wrap">
+    <input type="text" name="q" value="{{ search }}" placeholder="Search by title..." class="form-input flex-1 min-w-[200px]">
+    <input type="text" name="user" value="{{ user_filter }}" placeholder="Filter by user email..." class="form-input" style="max-width:220px;">
+    <button type="submit" class="btn-primary px-4 py-2 rounded-lg text-sm">Search</button>
+    {% if search or user_filter %}<a href="{% url 'adminpanel:conversations' %}" class="px-4 py-2 text-sm text-gray-500 hover:text-gray-700">Clear</a>{% endif %}
+</form>
+
+<form method="POST" action="{% url 'adminpanel:conversations_bulk_delete' %}" id="bulk-form">
+    {% csrf_token %}
+    <div class="flex items-center gap-3 mb-3">
+        <label class="text-sm text-gray-500"><input type="checkbox" id="select-all" class="mr-1"> Select All</label>
+        <button type="submit" class="text-xs px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 hidden" id="bulk-delete-btn" onclick="return confirm('Delete selected conversations?')">Delete Selected</button>
+        <span class="text-xs text-gray-400 hidden" id="selected-count"></span>
+    </div>
+
+    <div class="card">
+        <div class="table-wrapper">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width:30px;"></th>
+                    <th>Title</th>
+                    <th>User</th>
+                    <th>Messages</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for conv in conversations %}
+                <tr>
+                    <td><input type="checkbox" name="selected" value="{{ conv.pk }}" class="row-check"></td>
+                    <td><a href="{% url 'adminpanel:conversation_detail' pk=conv.pk %}" class="link-primary">{{ conv.title|truncatewords:8 }}</a></td>
+                    <td class="text-gray-600 text-sm">{{ conv.user.email }}</td>
+                    <td class="text-gray-500 text-sm">{{ conv.messages.count }}</td>
+                    <td>{% if conv.is_archived %}<span class="text-gray-400 text-xs">Archived</span>{% else %}<span class="text-green-600 text-xs">Active</span>{% endif %}</td>
+                    <td class="text-gray-500 text-sm">{{ conv.created_at|date:"M j, Y" }}</td>
+                    <td>
+                        <div class="flex items-center gap-2">
+                            <a href="{% url 'adminpanel:conversation_detail' pk=conv.pk %}" class="btn-outline-sm btn-outline-primary">View</a>
+                            <form method="POST" action="{% url 'adminpanel:conversation_delete' pk=conv.pk %}" class="inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-outline-sm btn-outline-danger" onclick="return confirm('Delete this conversation?')">Delete</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="px-4 py-8 text-center text-gray-400">No conversations found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</form>
+
+{% include "adminpanel/partials/pagination.html" with page_obj=conversations %}
+
+<script>
+(function(){
+    var selectAll = document.getElementById('select-all');
+    var checks = document.querySelectorAll('.row-check');
+    var bulkBtn = document.getElementById('bulk-delete-btn');
+    var countEl = document.getElementById('selected-count');
+    function updateBulk(){
+        var c = document.querySelectorAll('.row-check:checked').length;
+        bulkBtn.classList.toggle('hidden', c === 0);
+        countEl.classList.toggle('hidden', c === 0);
+        countEl.textContent = c + ' selected';
+    }
+    selectAll.addEventListener('change', function(){ checks.forEach(function(cb){ cb.checked = selectAll.checked; }); updateBulk(); });
+    checks.forEach(function(cb){ cb.addEventListener('change', updateBulk); });
+})();
+</script>
 {% endblock %}

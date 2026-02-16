@@ -1,8 +1,28 @@
 """Celery tasks for chat — background summarization and title generation."""
 import logging
+from decimal import Decimal
 from celery import shared_task
 
 logger = logging.getLogger(__name__)
+
+# gpt-4o-mini pricing
+_INPUT_PRICE = Decimal("0.15")   # per 1M tokens
+_OUTPUT_PRICE = Decimal("0.60")  # per 1M tokens
+_MILLION = Decimal("1000000")
+
+
+def _log_usage(user, conversation, query_text, input_tokens, output_tokens):
+    """Save a UsageLog entry for a background API call."""
+    from adminpanel.models import UsageLog
+    cost = (Decimal(input_tokens) * _INPUT_PRICE / _MILLION) + (Decimal(output_tokens) * _OUTPUT_PRICE / _MILLION)
+    UsageLog.objects.create(
+        user=user,
+        conversation=conversation,
+        query_text=query_text,
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
+        cost=cost,
+    )
 
 
 @shared_task
@@ -44,12 +64,18 @@ def summarize_conversation(conversation_id: str):
     )
     summary_text = response.choices[0].message.content.strip()
 
+    usage = response.usage
+    in_tok = usage.prompt_tokens if usage else 0
+    out_tok = usage.completion_tokens if usage else 0
+
     ConversationSummary.objects.create(
         conversation=conversation,
         summary_text=summary_text,
         messages_covered_until=older_messages[-1].created_at,
     )
-    logger.info(f"Summarized {len(older_messages)} messages for conversation {conversation_id}")
+
+    _log_usage(conversation.user, conversation, "[summarize_conversation]", in_tok, out_tok)
+    logger.info(f"Summarized {len(older_messages)} messages for conversation {conversation_id} (in={in_tok}, out={out_tok})")
 
 
 @shared_task
@@ -67,7 +93,10 @@ def generate_conversation_title(conversation_id: str):
     user_msg = messages[0].content if messages[0].role == "user" else messages[1].content
     asst_msg = messages[1].content if messages[1].role == "assistant" else messages[0].content
 
-    title = generate_title(user_msg, asst_msg)
+    result = generate_title(user_msg, asst_msg)
+    title = result["title"]
     conversation.title = title[:200]
     conversation.save(update_fields=["title"])
-    logger.info(f"Generated title for conversation {conversation_id}: {title}")
+
+    _log_usage(conversation.user, conversation, "[generate_title]", result["input_tokens"], result["output_tokens"])
+    logger.info(f"Generated title for conversation {conversation_id}: {title} (in={result['input_tokens']}, out={result['output_tokens']})")

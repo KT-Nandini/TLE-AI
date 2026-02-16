@@ -1,0 +1,21 @@
+{% if page_obj.has_other_pages %}
+<div class="flex items-center justify-between mt-4 text-sm text-gray-500">
+    <div>
+        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    </div>
+    <div class="flex gap-1">
+        {% if page_obj.has_previous %}
+        <a href="?page=1{% if search %}&q={{ search }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if user_filter %}&user={{ user_filter }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}"
+            class="px-3 py-1 border rounded hover:bg-gray-50">First</a>
+        <a href="?page={{ page_obj.previous_page_number }}{% if search %}&q={{ search }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if user_filter %}&user={{ user_filter }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}"
+            class="px-3 py-1 border rounded hover:bg-gray-50">Prev</a>
+        {% endif %}
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}{% if search %}&q={{ search }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if user_filter %}&user={{ user_filter }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}"
+            class="px-3 py-1 border rounded hover:bg-gray-50">Next</a>
+        <a href="?page={{ page_obj.paginator.num_pages }}{% if search %}&q={{ search }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if user_filter %}&user={{ user_filter }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}"
+            class="px-3 py-1 border rounded hover:bg-gray-50">Last</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}

@@ -1,0 +1,62 @@
+{% extends "adminpanel/base_admin.html" %}
+{% block title %}Settings - Admin - TLE AI{% endblock %}
+
+{% block admin_content %}
+<h1 class="text-2xl font-bold text-gray-800 mb-6">System Settings</h1>
+
+<form method="POST" class="space-y-6" style="max-width:600px;">
+    {% csrf_token %}
+
+    <div class="card p-6">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">OpenAI Configuration</h2>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Chat Model</label>
+                <select name="chat_model" class="form-input">
+                    <option value="gpt-4o-mini" {% if chat_model == "gpt-4o-mini" %}selected{% endif %}>gpt-4o-mini (cheapest)</option>
+                    <option value="gpt-4o" {% if chat_model == "gpt-4o" %}selected{% endif %}>gpt-4o (balanced)</option>
+                    <option value="gpt-4.1" {% if chat_model == "gpt-4.1" %}selected{% endif %}>gpt-4.1 (latest)</option>
+                    <option value="gpt-4.1-mini" {% if chat_model == "gpt-4.1-mini" %}selected{% endif %}>gpt-4.1-mini</option>
+                    <option value="gpt-4.1-nano" {% if chat_model == "gpt-4.1-nano" %}selected{% endif %}>gpt-4.1-nano (fastest)</option>
+                </select>
+                <p class="text-xs text-gray-400 mt-1">Current: {{ chat_model }}</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Temperature</label>
+                <input type="number" name="temperature" value="{{ temperature }}" step="0.1" min="0" max="2" class="form-input" style="max-width:120px;">
+                <p class="text-xs text-gray-400 mt-1">Lower = more focused. Higher = more creative. Default: 0.3</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">File Search Max Results</label>
+                <input type="number" name="max_results" value="{{ max_results }}" min="1" max="20" class="form-input" style="max-width:120px;">
+                <p class="text-xs text-gray-400 mt-1">Number of documents retrieved per query. Default: 5</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Vector Store ID</label>
+                <input type="text" value="{{ vector_store_id }}" class="form-input bg-gray-100 font-mono text-xs" disabled>
+                <p class="text-xs text-gray-400 mt-1">Change in .env file directly</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card p-6">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">Google Drive Sync</h2>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Drive Folder ID</label>
+                <input type="text" value="{{ drive_folder_id }}" class="form-input bg-gray-100 font-mono text-xs" disabled>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Sync Interval</label>
+                <input type="text" value="{{ drive_sync_interval }} minutes" class="form-input bg-gray-100" disabled>
+            </div>
+            <p class="text-xs text-gray-400">Drive settings are configured in .env. Change there and restart services.</p>
+        </div>
+    </div>
+
+    <div class="flex gap-3">
+        <button type="submit" class="btn-primary px-6 py-2 rounded-lg text-sm">Save Settings</button>
+        <p class="text-xs text-gray-400 mt-2">After saving, restart services for changes to take effect.</p>
+    </div>
+</form>
+{% endblock %}
