@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 @login_required
 def chat_home(request):
     """Main chat page — redirect to most recent conversation or show empty state."""
-    conversations = Conversation.objects.filter(user=request.user, is_archived=False)
+    conversations = Conversation.objects.filter(user=request.user, is_archived=False).order_by("-is_pinned", "-updated_at")
     latest = conversations.first()
     if latest:
         return redirect("chat:detail", pk=latest.pk)
@@ -36,7 +36,7 @@ def conversation_detail(request, pk):
     """Display a conversation with its messages."""
     conv = get_object_or_404(Conversation, pk=pk, user=request.user)
     chat_messages = conv.messages.all()
-    conversations = Conversation.objects.filter(user=request.user, is_archived=False)
+    conversations = Conversation.objects.filter(user=request.user, is_archived=False).order_by("-is_pinned", "-updated_at")
     return render(request, "chat/detail.html", {
         "conversation": conv,
         "chat_messages": chat_messages,
@@ -172,9 +172,32 @@ def conversation_archive(request, pk):
 
 
 @login_required
+@require_POST
+def conversation_rename(request, pk):
+    """Rename a conversation via AJAX."""
+    conv = get_object_or_404(Conversation, pk=pk, user=request.user)
+    title = request.POST.get("title", "").strip()
+    if not title:
+        return JsonResponse({"error": "Title cannot be empty"}, status=400)
+    conv.title = title[:200]
+    conv.save(update_fields=["title"])
+    return JsonResponse({"ok": True, "title": conv.title})
+
+
+@login_required
+@require_POST
+def conversation_pin(request, pk):
+    """Toggle pin status of a conversation."""
+    conv = get_object_or_404(Conversation, pk=pk, user=request.user)
+    conv.is_pinned = not conv.is_pinned
+    conv.save(update_fields=["is_pinned"])
+    return JsonResponse({"ok": True, "is_pinned": conv.is_pinned})
+
+
+@login_required
 def conversation_sidebar(request):
     """HTMX partial: return updated conversation sidebar."""
-    conversations = Conversation.objects.filter(user=request.user, is_archived=False)
+    conversations = Conversation.objects.filter(user=request.user, is_archived=False).order_by("-is_pinned", "-updated_at")
     return render(request, "chat/partials/sidebar.html", {"conversations": conversations})
 
 

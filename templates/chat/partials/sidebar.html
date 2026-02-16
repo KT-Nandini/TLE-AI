@@ -4,11 +4,148 @@
 </a>
 <div class="sidebar-divider"></div>
 {% for conv in conversations %}
-<a href="{% url 'chat:detail' pk=conv.pk %}"
-    class="sidebar-nav-item {% if conversation.pk == conv.pk %}active{% endif %}">
-    <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-    <span class="sidebar-label">{{ conv.title }}</span>
-</a>
+<div class="sidebar-conv-item {% if conversation.pk == conv.pk %}active{% endif %}" data-conv-id="{{ conv.pk }}">
+    <a href="{% url 'chat:detail' pk=conv.pk %}" class="sidebar-conv-link">
+        {% if conv.is_pinned %}
+        <svg class="sidebar-icon" viewBox="0 0 24 24" style="color:#4a90a4;" fill="currentColor"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5v6l1 1 1-1v-6h5v-2l-2-2z"/></svg>
+        {% else %}
+        <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+        {% endif %}
+        <span class="sidebar-label">{{ conv.title }}</span>
+    </a>
+    <div class="sidebar-conv-menu" onclick="event.stopPropagation();">
+        <button class="sidebar-menu-btn" onclick="toggleConvMenu(this)" title="Options">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+        </button>
+        <div class="sidebar-menu-dropdown">
+            <button onclick="renameConv('{{ conv.pk }}', this)">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                Rename
+            </button>
+            <button onclick="pinConv('{{ conv.pk }}', this)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5v6l1 1 1-1v-6h5v-2l-2-2z"/></svg>
+                {% if conv.is_pinned %}Unpin{% else %}Pin{% endif %}
+            </button>
+            <button class="text-danger" onclick="deleteConv('{{ conv.pk }}', this)">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                Delete
+            </button>
+        </div>
+    </div>
+</div>
 {% empty %}
 <p class="text-xs text-center mt-4 text-gray-400">No conversations yet</p>
 {% endfor %}
+
+<script>
+function toggleConvMenu(btn) {
+    var dropdown = btn.nextElementSibling;
+    // Close all other open menus
+    document.querySelectorAll('.sidebar-menu-dropdown.show').forEach(function(d) {
+        if (d !== dropdown) d.classList.remove('show');
+    });
+    // Position dropdown using fixed coordinates to escape sidebar overflow
+    var rect = btn.getBoundingClientRect();
+    dropdown.style.top = rect.bottom + 4 + 'px';
+    dropdown.style.left = rect.left + 'px';
+    dropdown.classList.toggle('show');
+}
+
+function renameConv(pk, btn) {
+    btn.closest('.sidebar-menu-dropdown').classList.remove('show');
+    var item = document.querySelector('.sidebar-conv-item[data-conv-id="' + pk + '"]');
+    var label = item.querySelector('.sidebar-label');
+    var link = item.querySelector('.sidebar-conv-link');
+    var menu = item.querySelector('.sidebar-conv-menu');
+    var oldTitle = label.textContent.trim();
+
+    // Hide link and menu, show inline input
+    link.style.display = 'none';
+    menu.style.display = 'none';
+
+    var input = document.createElement('input');
+    input.type = 'text';
+    input.value = oldTitle;
+    input.className = 'sidebar-rename-input';
+    item.insertBefore(input, menu);
+    input.focus();
+    input.select();
+
+    function saveRename() {
+        var newTitle = input.value.trim();
+        if (newTitle && newTitle !== oldTitle) {
+            fetch('/chat/' + pk + '/rename/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: 'title=' + encodeURIComponent(newTitle)
+            }).then(function(r) { return r.json(); }).then(function(d) {
+                if (d.ok) {
+                    label.textContent = d.title;
+                    if (item.classList.contains('active') && document.getElementById('conv-title')) {
+                        document.getElementById('conv-title').textContent = d.title;
+                    }
+                }
+            });
+        }
+        input.remove();
+        link.style.display = '';
+        menu.style.display = '';
+    }
+
+    input.addEventListener('blur', saveRename);
+    input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+        if (e.key === 'Escape') { input.value = oldTitle; input.blur(); }
+    });
+}
+
+function pinConv(pk, btn) {
+    fetch('/chat/' + pk + '/pin/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    }).then(function(r) { return r.json(); }).then(function(d) {
+        if (d.ok) {
+            htmx.ajax('GET', '/chat/sidebar/', {target: '#sidebar-content', swap: 'innerHTML'}).then(function() {
+                document.querySelectorAll('#sidebar-content .sidebar-conv-item').forEach(function(el) {
+                    el.classList.remove('active');
+                    var activePk = document.querySelector('.sidebar-conv-item.active');
+                    // Re-highlight from conv-title data
+                });
+            });
+        }
+    });
+    btn.closest('.sidebar-menu-dropdown').classList.remove('show');
+}
+
+function deleteConv(pk, btn) {
+    if (!confirm('Delete this conversation?')) {
+        btn.closest('.sidebar-menu-dropdown').classList.remove('show');
+        return;
+    }
+    var form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/chat/' + pk + '/archive/';
+    var csrf = document.createElement('input');
+    csrf.type = 'hidden';
+    csrf.name = 'csrfmiddlewaretoken';
+    csrf.value = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    form.appendChild(csrf);
+    document.body.appendChild(form);
+    form.submit();
+}
+
+// Close menus when clicking outside
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.sidebar-conv-menu')) {
+        document.querySelectorAll('.sidebar-menu-dropdown.show').forEach(function(d) {
+            d.classList.remove('show');
+        });
+    }
+});
+</script>

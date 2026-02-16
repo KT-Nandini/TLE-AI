@@ -128,6 +128,34 @@
 
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
+    function refreshSidebar() {
+        htmx.ajax('GET', '/chat/sidebar/', {target: '#sidebar-content', swap: 'innerHTML'}).then(function() {
+            document.querySelectorAll('#sidebar-content .sidebar-conv-item').forEach(function(el) {
+                el.classList.remove('active');
+                if (el.getAttribute('data-conv-id') === convPk) el.classList.add('active');
+            });
+        });
+    }
+
+    function pollForTitle() {
+        var attempts = 0;
+        var maxAttempts = 8;
+        var interval = setInterval(function() {
+            attempts++;
+            fetch('/chat/' + convPk + '/title/').then(function(r) { return r.json(); }).then(function(d) {
+                if (d.title && d.title !== 'New Conversation') {
+                    document.getElementById('conv-title').textContent = d.title;
+                    refreshSidebar();
+                    clearInterval(interval);
+                } else if (attempts >= maxAttempts) {
+                    clearInterval(interval);
+                }
+            }).catch(function() {
+                if (attempts >= maxAttempts) clearInterval(interval);
+            });
+        }, 2000);
+    }
+
     form.addEventListener('htmx:afterRequest', function(e) {
         if (e.detail.successful) {
             input.value = '';
@@ -177,13 +205,8 @@
                     rawText = '';
                     streamCitations = [];
                     messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                    htmx.ajax('GET', '/chat/sidebar/', {target: '#sidebar-content', swap: 'innerHTML'});
-                    setTimeout(function() {
-                        htmx.ajax('GET', '/chat/sidebar/', {target: '#sidebar-content', swap: 'innerHTML'});
-                        fetch(`/chat/${convPk}/title/`).then(r => r.json()).then(d => {
-                            if (d.title) document.getElementById('conv-title').textContent = d.title;
-                        }).catch(() => {});
-                    }, 3000);
+                    refreshSidebar();
+                    pollForTitle();
                     return;
                 }
                 try {

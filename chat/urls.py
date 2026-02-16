@@ -10,6 +10,8 @@ urlpatterns = [
     path("<uuid:pk>/send/", views.send_message, name="send"),
     path("<uuid:pk>/stream/", views.stream_response, name="stream"),
     path("<uuid:pk>/archive/", views.conversation_archive, name="archive"),
+    path("<uuid:pk>/rename/", views.conversation_rename, name="rename"),
+    path("<uuid:pk>/pin/", views.conversation_pin, name="pin"),
     path("<uuid:pk>/title/", views.conversation_title, name="title"),
     path("sidebar/", views.conversation_sidebar, name="sidebar"),
 ]
